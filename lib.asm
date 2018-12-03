@@ -1,27 +1,21 @@
 section	.data
-buffersize: equ 64
-str:	db "This string is here to showcase the library", 0 ; can be deleted
-userin:	times buffersize db 0
-prompt:	db "Type a string: ", 0
+buffersize: equ 64		;used by inputb
+str:	db "Hello, ", 0		;example code
+userIn:	times buffersize db 0	;example code
+prompt:	db "Input: ", 0		;example code
 section	.text
 global	_start
 	_start:
 	;throw stuff here to play with the library
 	;you can delete everything in here without worry
-	mov	eax, str
-	call	println
 	mov	eax, prompt
 	call	print
-	mov	eax, userin
+	mov	eax, userIn
 	call	inputb
-	push	eax
-	mov	eax, 0ah
-	call	putchar
-	call	putchar
-	pop	eax
+	mov	eax, str
+	mov	ebx, userIn
+	call	strcat
 	call	println
-
-	
 	call	exit
 	;functions
 	strlen: ; takes string in eax, returns length in eax
@@ -172,3 +166,19 @@ global	_start
 	pop	ebx
 	pop	eax
 	ret
+
+	strcat: ;concatenate strings
+	push	eax
+	.loop:
+	cmp	byte [eax], 0
+	jz	.eloop
+	inc	eax
+	jmp	.loop
+	.eloop:
+	push	ebx
+	mov	ebx, eax
+	pop	eax
+	call	strcpy
+	pop	eax
+	ret
+	
