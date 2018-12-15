@@ -6,7 +6,7 @@ current functions
 
 
 print <string in eax>
-  
+
 println <string in eax>
 
 putchar <character in eax
