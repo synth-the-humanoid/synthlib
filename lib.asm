@@ -12,6 +12,8 @@ global	_start
 	call	print
 	mov	eax, userIn
 	call	inputb
+	mov	eax, 2
+	call	sleep
 	mov	eax, str
 	mov	ebx, userIn
 	call	strcat
@@ -182,3 +184,21 @@ global	_start
 	pop	eax
 	ret
 	
+
+	sleep: ;sleep for <eax> seconds
+	push	eax
+	push	ebx
+	push	ecx
+	push	eax
+	mov	ebx, esp
+	xor	ecx, ecx
+	push	ecx
+	mov	ecx, esp
+	mov	eax, 162
+	int	80h
+	pop	eax
+	pop	eax
+	pop	ecx
+	pop	ebx
+	pop	eax
+	ret
