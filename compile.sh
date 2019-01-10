@@ -1,2 +1,2 @@
-nasm -f elf32 -g lib.asm
-ld -m elf_i386 -g lib.o
+nasm -f elf main.s
+gcc -m32 -g main.c main.o
