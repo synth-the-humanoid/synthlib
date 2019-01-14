@@ -7,6 +7,8 @@ global	putchar
 global	inputb
 global	strcmp
 global	getchar
+global	sleep
+global	exp
 
 strlen:		; int strlen(char*) ;; returns length of string(without term byte)
 	mov	eax, [esp+4]
@@ -118,5 +120,44 @@ getchar: ; char getchar() ;; gets one byte from stdin
 	pop	eax
 	pop	edx
 	pop	ecx
+	pop	ebx
+	ret
+sleep: ; void sleep(int) ;; sleeps for however many seconds the parameter specifies
+	mov	eax, [esp+4]
+	push	ebx
+	push	ecx
+	mov	ecx, 0
+	mov	ebx, eax
+	push	ecx
+	mov	ecx, esp
+	push	ebx
+	mov	ebx, esp
+	mov	eax, 162
+	int	80h
+	pop	ebx
+	pop	ecx
+	pop	ecx
+	pop	ebx
+	ret
+
+exp: ; long exp(int, int) ;; raises first param to second param
+	mov	eax, [esp+4]
+	mov	edx, [esp+8]
+	push	ebx
+	mov	ebx, edx
+	cmp	ebx, 0
+	jz	.ret1
+	dec	ebx
+	.loop:
+	cmp	ebx, 0
+	jz	.clean
+	imul	eax
+	dec	ebx
+	jmp	.loop
+	.ret1:
+	mov	eax, 1
+	pop	ebx
+	ret
+	.clean:
 	pop	ebx
 	ret

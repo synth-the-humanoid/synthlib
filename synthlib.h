@@ -9,9 +9,12 @@ extern void putchar(char);
 extern void println(char *);
 extern int strlen(char *);
 extern char getchar();
+extern void sleep(int);
+extern long exp(int, int);
+
 //functions declared in C
 void inputb(char *, int); // buffered input -- written in C to prevent overflow
-
+void strcpy(char *, char *, int); // string copy, buffered
 
 //functions
 
@@ -33,6 +36,16 @@ void inputb(char *buffer, int buffersize) {
 	return;
 }
 
+void strcpy(char *from, char *to, int len) {
+	len--;
+	while(*from != 0 && len--) {
+		*to = *from;
+		from++;
+		to++;
+	}
+	*to = 0;
+	return;
+}
 
 
 #endif
