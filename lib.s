@@ -19,6 +19,10 @@ global	strcpy
 global	getc
 global	putc
 global	strcpy
+global	atoi
+global	itoa
+global	strzero
+global	memzero
 
 strlen:		; int strlen(char*) ;; returns length of string(without term byte)
 	mov	eax, [esp+4]
@@ -259,4 +263,57 @@ finputb: ; void inputb(char *, int, FILE *) ;; buffered input from file
 	jmp	.cloop
 	.end:
 	pop	edx
+	ret
+
+
+atoi: ; signed long atoi(char *) ;; ascii to integer
+	mov	ecx, [esp+4]
+	xor	eax, eax
+	xor	edx, edx
+	.loop:
+	cmp	byte [ecx], '0'
+	jl	.nonint
+	cmp	byte [ecx], '9'
+	jg	.nonint
+	mov	dl, [ecx]
+	sub	edx, '0'
+	imul	eax, 10
+	add	eax, edx
+	inc	ecx
+	jmp	.loop
+	.nonint:
+	cmp	eax, 0
+	jz	.error
+	ret
+	.error:
+	xor	eax, eax
+	dec	eax
+	ret
+
+
+strzero: ; void strzero(char *) ;; nullify a string
+	mov	eax, [esp+4]
+	push	eax
+	call	strlen
+	mov	edx, eax
+	pop	eax
+	push	edx
+	push	eax
+	call	memzero
+	pop	eax
+	pop	edx
+	ret
+
+
+memzero: ; void memzero(void *, int length) ;; overwrite (length) bytes with zero
+	mov	eax, [esp+4]
+	mov	ecx, [esp+8]
+	.loop:
+	cmp	ecx, 0
+	jz	.clean
+	mov	byte [eax], 0
+	inc	eax
+	dec	ecx
+	jmp	.loop
+	.clean:
 	ret
