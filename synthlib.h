@@ -20,8 +20,8 @@ typedef struct
 
 
 
-//functions declared in lib.asm
-
+//functions initialized in lib.asm
+//documentation provided in lib.asm as well, next to the function initialization
 extern void print(char *);
 extern int strcmp(char *, char *);
 extern void putchar(char);

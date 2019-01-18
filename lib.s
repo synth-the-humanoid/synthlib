@@ -24,7 +24,7 @@ global	itoa
 global	strzero
 global	memzero
 
-strlen:		; int strlen(char*) ;; returns length of string(without term byte)
+strlen:		; int strlen(char *string) ;; returns length of string(without term byte)
 	mov	eax, [esp+4]
 	push	ebx
 	mov	ebx, eax
@@ -39,7 +39,7 @@ strlen:		; int strlen(char*) ;; returns length of string(without term byte)
 	pop	ebx
 	ret
 
-print: ; void print(char *) ;; prints char * to stdout
+print: ; void print(char *string) ;; prints string to stdout
 	mov	eax, [esp+4]
 	push	edx
 	push	ecx
@@ -56,7 +56,7 @@ print: ; void print(char *) ;; prints char * to stdout
 	pop	edx
 	ret
 
-putchar: ; void putchar(char) ;; prints a single character to stdout
+putchar: ; void putchar(char) ;; prints a char to stdout
 	mov	eax, [esp+4]
 	mov	ecx, stdout
 	push	ecx
@@ -66,7 +66,7 @@ putchar: ; void putchar(char) ;; prints a single character to stdout
 	pop	ecx
 	ret
 
-putc: ; void putc(char, FILE *) ;; puts character to file
+putc: ; void putc(char, FILE *stream) ;; prints char to stream
 	mov	eax, [esp+4]
 	mov	ecx, [esp+8]
 	push	ebx
@@ -82,7 +82,7 @@ putc: ; void putc(char, FILE *) ;; puts character to file
 
 
 
-println: ; void println(char *) ;; print with newline
+println: ; void println(char *string) ;; print string with newline
 	mov	eax, [esp+4]
 	push	eax
 	call	print
@@ -93,7 +93,7 @@ println: ; void println(char *) ;; print with newline
 	pop	eax
 	ret
 
-strcmp: ; int strcmp(char *, char *) ;; compares two char *'s, returns 0 if true
+strcmp: ; int strcmp(char *str1, char *str2) ;; compares str1 and str2, returning either a negative, zero, or positive depending on if the result is less than, equal to, or greater than(in that order)
 	mov	eax, [esp+4]
 	mov	edx, [esp+8]
 	push	ebx
@@ -150,7 +150,7 @@ getchar: ; char getchar() ;; gets one byte from stdin
 	pop	ecx
 	ret
 
-sleep: ; void sleep(int) ;; sleeps for however many seconds the parameter specifies
+sleep: ; void sleep(int time) ;; sleeps for time seconds
 	mov	eax, [esp+4]
 	push	ebx
 	push	ecx
@@ -168,7 +168,7 @@ sleep: ; void sleep(int) ;; sleeps for however many seconds the parameter specif
 	pop	ebx
 	ret
 
-exp: ; long exp(int, int) ;; raises first param to second param
+exp: ; long exp(int base, int power) ;; raises base to power
 	mov	eax, [esp+4]
 	mov	edx, [esp+8]
 	push	ebx
@@ -207,13 +207,13 @@ strcpy: ; void strcpy(char *src, char *dest, int buffer) ;; copies from src to d
 
 
 
-error: ; called in-case of library error
+error: ; called in-case of library error -- unused as of Jan. 18, 2019
 	mov	eax, 1
 	xor	ebx, ebx
 	dec	ebx
 	int	80h
 
-inputb: ; void inputb(char *, int) ;; buffered stdin input
+inputb: ; void inputb(char *string, int buffersize) ;; input from stdin into string. cuts off at buffersize bytes
 	mov	eax, [esp+4]
 	mov	ecx, [esp+8]
 	mov	edx, stdin
@@ -228,7 +228,7 @@ inputb: ; void inputb(char *, int) ;; buffered stdin input
 
 
 
-finputb: ; void inputb(char *, int, FILE *) ;; buffered input from file
+finputb: ; void inputb(char *string, int buffersize, FILE *stream) ;; input from stream into string. cuts off at buffersize bytes
 	mov	eax, [esp+4]
 	mov	ecx, [esp+8]
 	mov	edx, [esp+12]
@@ -266,7 +266,7 @@ finputb: ; void inputb(char *, int, FILE *) ;; buffered input from file
 	ret
 
 
-atoi: ; signed long atoi(char *) ;; ascii to integer
+atoi: ; signed long atoi(char *string) ;; converts string into a signed long integer
 	mov	ecx, [esp+4]
 	xor	eax, eax
 	xor	edx, edx
@@ -291,7 +291,7 @@ atoi: ; signed long atoi(char *) ;; ascii to integer
 	ret
 
 
-strzero: ; void strzero(char *) ;; nullify a string
+strzero: ; void strzero(char *string) ;; convert all the bytes in string into zeroes
 	mov	eax, [esp+4]
 	push	eax
 	call	strlen
@@ -305,7 +305,7 @@ strzero: ; void strzero(char *) ;; nullify a string
 	ret
 
 
-memzero: ; void memzero(void *, int length) ;; overwrite (length) bytes with zero
+memzero: ; void memzero(void *memory, int length) ;; overwrite (length) bytes of data, starting at memory, ending at (memory + length - 1), with zeroes
 	mov	eax, [esp+4]
 	mov	ecx, [esp+8]
 	.loop:
