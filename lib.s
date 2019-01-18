@@ -1,4 +1,10 @@
+section	.data
+stdin:	equ 0
+stdout:	equ 1
+stderr:	equ 2
+
 section	.text
+
 ;function declarations
 global	print
 global	strlen
@@ -9,6 +15,10 @@ global	strcmp
 global	getchar
 global	sleep
 global	exp
+global	strcpy
+global	getc
+global	putc
+global	strcpy
 
 strlen:		; int strlen(char*) ;; returns length of string(without term byte)
 	mov	eax, [esp+4]
@@ -44,21 +54,29 @@ print: ; void print(char *) ;; prints char * to stdout
 
 putchar: ; void putchar(char) ;; prints a single character to stdout
 	mov	eax, [esp+4]
-	push	edx
+	mov	ecx, stdout
 	push	ecx
+	push	eax
+	call	putc
+	pop	eax
+	pop	ecx
+	ret
+
+putc: ; void putc(char, FILE *) ;; puts character to file
+	mov	eax, [esp+4]
+	mov	ecx, [esp+8]
 	push	ebx
 	push	eax
-	mov	eax, esp
 	mov	edx, 1
-	mov	ecx, eax
-	mov	ebx, 1
+	mov	ebx, ecx
+	mov	ecx, esp
 	mov	eax, 4
 	int	80h
 	pop	eax
 	pop	ebx
-	pop	ecx
-	pop	edx
 	ret
+
+
 
 println: ; void println(char *) ;; print with newline
 	mov	eax, [esp+4]
@@ -107,21 +125,27 @@ strcmp: ; int strcmp(char *, char *) ;; compares two char *'s, returns 0 if true
 	pop	ebx
 	ret
 
-getchar: ; char getchar() ;; gets one byte from stdin
+getc:	; char getc(FILE *stream); get one byte from stream
+	mov	eax, [esp+4]
 	push	ebx
-	push	ecx
-	push	edx
+	mov	ebx, eax
 	push	eax
 	mov	edx, 1
 	mov	ecx, esp
-	mov	ebx, 0
 	mov	eax, 3
 	int	80h
 	pop	eax
-	pop	edx
-	pop	ecx
 	pop	ebx
 	ret
+	
+
+getchar: ; char getchar() ;; gets one byte from stdin
+	mov	eax, stdin
+	push	eax
+	call	getc
+	pop	ecx
+	ret
+
 sleep: ; void sleep(int) ;; sleeps for however many seconds the parameter specifies
 	mov	eax, [esp+4]
 	push	ebx
@@ -160,4 +184,79 @@ exp: ; long exp(int, int) ;; raises first param to second param
 	ret
 	.clean:
 	pop	ebx
+	ret
+
+
+strcpy: ; void strcpy(char *src, char *dest, int buffer) ;; copies from src to dest, using buffer to prevent overflow
+	mov	eax, [esp+4]
+	mov	edx, [esp+8]
+	mov	ecx, [esp+12]
+	push	esi
+	push	edi
+	mov	esi, eax
+	mov	edi, edx
+	cld
+	rep	movsb
+	pop	edi
+	pop	esi
+	ret
+
+
+
+error: ; called in-case of library error
+	mov	eax, 1
+	xor	ebx, ebx
+	dec	ebx
+	int	80h
+
+inputb: ; void inputb(char *, int) ;; buffered stdin input
+	mov	eax, [esp+4]
+	mov	ecx, [esp+8]
+	mov	edx, stdin
+	push	edx
+	push	ecx
+	push	eax
+	call	finputb
+	pop	eax
+	pop	ecx
+	pop	edx
+	ret
+
+
+
+finputb: ; void inputb(char *, int, FILE *) ;; buffered input from file
+	mov	eax, [esp+4]
+	mov	ecx, [esp+8]
+	mov	edx, [esp+12]
+	push	ebx
+	mov	ebx, eax
+	dec	ecx
+	xor	eax, eax
+	.loop:
+	cmp	ecx, 0
+	jz	.clean
+	dec	ecx
+	push	ecx
+	push	edx
+	call	getc
+	pop	edx
+	pop	ecx
+	cmp	eax, 0ah
+	je	.clean
+	mov	byte [ebx], al
+	inc	ebx
+	jmp	.loop
+	.clean:
+	mov	byte [ebx], 0
+	pop	ebx
+	push	edx
+	.cloop:
+	cmp	eax, 0ah
+	je	.end
+	cmp	eax, 0
+	jz	.end
+	call	getc
+	jmp	.cloop
+	.end:
+	pop	edx
 	ret
