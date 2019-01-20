@@ -23,66 +23,63 @@ global	atoi
 global	itoa
 global	strzero
 global	memzero
+global	memcpy
 
 strlen:		; int strlen(char *string) ;; returns length of string(without term byte)
-	mov	eax, [esp+4]
-	push	ebx
-	mov	ebx, eax
-	.loop:
-	cmp	byte[ebx], 0
-	jz	.cleanup
-	inc	ebx
-	jmp	.loop
-	.cleanup:
-	sub	ebx, eax
-	mov	eax, ebx
-	pop	ebx
+	mov	eax, [esp+4] ; rax refers to string
+	push	ebx ; save nonvolatile register
+	mov	ebx, eax ; rax and rbx refer to string
+	.loop: ; loop until the terminating byte
+	cmp	byte[ebx], 0 ; check for term. byte
+	jz	.cleanup ; if end of string, end loop
+	inc	ebx ; otherwise, increment rbx
+	jmp	.loop ; loop
+	.cleanup: ; calculate distance between rax and rbx
+	sub	ebx, eax ; get distance
+	mov	eax, ebx ; move distance to rax(return value)
+	pop	ebx ; fix volatile register
 	ret
 
 print: ; void print(char *string) ;; prints string to stdout
-	mov	eax, [esp+4]
-	push	edx
-	push	ecx
-	push	ebx
-	push	eax
-	call	strlen
-	mov	edx, eax
-	pop	ecx
-	mov	ebx, 1
-	mov	eax, 4
-	int	80h
-	pop	ebx
-	pop	ecx
-	pop	edx
+	mov	eax, [esp+4] ; rax refers to string
+	push	ebx ; save volatile register
+	push	eax ; push argument to strlen
+	call	strlen ; get length of string, return to eax
+	mov	edx, eax ; prepare syscall, rdx refers to how many bytes to print
+	pop	ecx ; take the string, which is on the stack, and store it in rcx
+	mov	ebx, stdout ; tell syscall to output to stdout
+	mov	eax, 4 ; specify syscall 4(write)
+	int	80h ; execute syscall
+	pop	ebx ; restore nonvolatile register
 	ret
 
-putchar: ; void putchar(char) ;; prints a char to stdout
-	mov	eax, [esp+4]
-	mov	ecx, stdout
-	push	ecx
-	push	eax
-	call	putc
-	pop	eax
-	pop	ecx
+putchar: ; void putchar(char character) ;; prints a single character to stdout
+	mov	eax, [esp+4] ; rax refers to character
+	mov	ecx, stdout ; rcx refers to stdout
+	push	ecx ; push argument to function
+	push	eax ; push argument to function
+	call	putc ; putc(character, stdout)
+	pop	eax ; clear stack
+	pop	ecx ; clear stack
 	ret
 
-putc: ; void putc(char, FILE *stream) ;; prints char to stream
-	mov	eax, [esp+4]
-	mov	ecx, [esp+8]
-	push	ebx
-	push	eax
-	mov	edx, 1
-	mov	ebx, ecx
-	mov	ecx, esp
-	mov	eax, 4
-	int	80h
-	pop	eax
-	pop	ebx
+putc: ; void putc(char character, FILE *stream) ;; puts character to stream
+	mov	eax, [esp+4] ; rax refers to character
+	mov	ecx, [esp+8] ; rbx refers to stream
+	push	ebx ; save nonvolatile register
+	push	eax ; create character pointer for syscall
+	mov	edx, 1 ; print 1 byte
+	mov	ebx, ecx ; use stream for syscall
+	mov	ecx, esp ; use pointer to character for syscall
+	mov	eax, 4 ; specify syscall 4(write)
+	int	80h ; execute syscall
+	pop	eax ; clean stack 
+	pop	ebx ; clean stack
 	ret
 
 
 
-println: ; void println(char *string) ;; print string with newline
+println: ; void println(char *) ;; print with newline
 	mov	eax, [esp+4]
 	push	eax
 	call	print
@@ -93,7 +90,7 @@ println: ; void println(char *string) ;; print string with newline
 	pop	eax
 	ret
 
-strcmp: ; int strcmp(char *str1, char *str2) ;; compares str1 and str2, returning either a negative, zero, or positive depending on if the result is less than, equal to, or greater than(in that order)
+strcmp: ; int strcmp(char *, char *) ;; compares two char *'s, returns 0 if true
 	mov	eax, [esp+4]
 	mov	edx, [esp+8]
 	push	ebx
@@ -150,7 +147,7 @@ getchar: ; char getchar() ;; gets one byte from stdin
 	pop	ecx
 	ret
 
-sleep: ; void sleep(int time) ;; sleeps for time seconds
+sleep: ; void sleep(int) ;; sleeps for however many seconds the parameter specifies
 	mov	eax, [esp+4]
 	push	ebx
 	push	ecx
@@ -168,7 +165,7 @@ sleep: ; void sleep(int time) ;; sleeps for time seconds
 	pop	ebx
 	ret
 
-exp: ; long exp(int base, int power) ;; raises base to power
+exp: ; long exp(int, int) ;; raises first param to second param
 	mov	eax, [esp+4]
 	mov	edx, [esp+8]
 	push	ebx
@@ -191,7 +188,7 @@ exp: ; long exp(int base, int power) ;; raises base to power
 	ret
 
 
-strcpy: ; void strcpy(char *src, char *dest, int buffer) ;; copies from src to dest, using buffer to prevent overflow
+memcpy: ; void memcpy(void *src, void *dest, int buffer) ;; copies from src to dest, using buffer to prevent overflow
 	mov	eax, [esp+4]
 	mov	edx, [esp+8]
 	mov	ecx, [esp+12]
@@ -207,13 +204,13 @@ strcpy: ; void strcpy(char *src, char *dest, int buffer) ;; copies from src to d
 
 
 
-error: ; called in-case of library error -- unused as of Jan. 18, 2019
+error: ; called in-case of library error
 	mov	eax, 1
 	xor	ebx, ebx
 	dec	ebx
 	int	80h
 
-inputb: ; void inputb(char *string, int buffersize) ;; input from stdin into string. cuts off at buffersize bytes
+inputb: ; void inputb(char *, int) ;; buffered stdin input
 	mov	eax, [esp+4]
 	mov	ecx, [esp+8]
 	mov	edx, stdin
@@ -228,7 +225,7 @@ inputb: ; void inputb(char *string, int buffersize) ;; input from stdin into str
 
 
 
-finputb: ; void inputb(char *string, int buffersize, FILE *stream) ;; input from stream into string. cuts off at buffersize bytes
+finputb: ; void inputb(char *, int, FILE *) ;; buffered input from file
 	mov	eax, [esp+4]
 	mov	ecx, [esp+8]
 	mov	edx, [esp+12]
@@ -266,7 +263,7 @@ finputb: ; void inputb(char *string, int buffersize, FILE *stream) ;; input from
 	ret
 
 
-atoi: ; signed long atoi(char *string) ;; converts string into a signed long integer
+atoi: ; signed long atoi(char *) ;; ascii to integer
 	mov	ecx, [esp+4]
 	xor	eax, eax
 	xor	edx, edx
@@ -291,7 +288,7 @@ atoi: ; signed long atoi(char *string) ;; converts string into a signed long int
 	ret
 
 
-strzero: ; void strzero(char *string) ;; convert all the bytes in string into zeroes
+strzero: ; void strzero(char *) ;; nullify a string
 	mov	eax, [esp+4]
 	push	eax
 	call	strlen
@@ -305,7 +302,7 @@ strzero: ; void strzero(char *string) ;; convert all the bytes in string into ze
 	ret
 
 
-memzero: ; void memzero(void *memory, int length) ;; overwrite (length) bytes of data, starting at memory, ending at (memory + length - 1), with zeroes
+memzero: ; void memzero(void *, int length) ;; overwrite (length) bytes with zero
 	mov	eax, [esp+4]
 	mov	ecx, [esp+8]
 	.loop:
@@ -316,4 +313,17 @@ memzero: ; void memzero(void *memory, int length) ;; overwrite (length) bytes of
 	dec	ecx
 	jmp	.loop
 	.clean:
+	ret
+
+strcpy: ; void strcpy(void *src, void *dst, int length) ;; copies length bytes from src to dst.
+	mov	eax, [esp+4]
+	mov	ecx, [esp+8]
+	mov	edx, [esp+12]
+	push	edx
+	push	ecx
+	push	eax
+	call	memcpy
+	pop	eax
+	pop	ecx
+	pop	edx
 	ret
