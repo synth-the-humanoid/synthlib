@@ -1,7 +1,7 @@
 #ifndef synthlib
 #define synthlib
 
-//FILE struct def from glibc
+//FILE struct def from glibc -- literally copy/pasted for compatibility
 typedef struct 
 {
  short level ;
