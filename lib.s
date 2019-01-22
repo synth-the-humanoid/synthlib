@@ -79,251 +79,243 @@ putc: ; void putc(char character, FILE *stream) ;; puts character to stream
 
 
 
-println: ; void println(char *) ;; print with newline
-	mov	eax, [esp+4]
-	push	eax
-	call	print
-	pop	eax
-	mov	eax, 0ah
-	push	eax
-	call	putchar
-	pop	eax
+println: ; void println(char *string) ;; print with newline
+	mov	eax, [esp+4] ; rax refers to string
+	push	eax ; print(string);
+	call	print ; call print
+	pop	eax ; clean the stack
+	mov	eax, 0ah ; rax refers to '\n'
+	push	eax ; putchar('\n');
+	call	putchar ; call putchar
+	pop	eax ; clean stack
 	ret
 
-strcmp: ; int strcmp(char *, char *) ;; compares two char *'s, returns 0 if true
-	mov	eax, [esp+4]
-	mov	edx, [esp+8]
-	push	ebx
-	push	ecx
-	mov	ebx, eax
-	mov	ecx, edx
-	mov	eax, 0
-	.loop:
-	mov	byte dl, [ebx]
-	mov	byte dh, [ecx]
-	cmp	dl, dh
-	jg	.add
-	jl	.sub
-	cmp	dl, 0
-	jz	.end
-	cmp	dh, 0
-	jz	.end
-	inc	ebx
-	inc	ecx
-	jmp	.loop
+strcmp: ; int strcmp(char *s1, char *s2) ;; compares two char *'s, returns 0 if true
+	mov	eax, [esp+4] ; puts s1 in rax
+	mov	edx, [esp+8] ; puts s2 in rdx
+	push	ebx ; save nonvolatile register 
+	mov	ebx, eax ; move s1 to rbx
+	mov	ecx, edx ; mov s2 to rcx
+	mov	eax, 0 ; set the counter to 0 
+	.loop: ; while neither are at terminating byte
+	mov	byte dl, [ebx] ; load s1[eax] into dl
+	mov	byte dh, [ecx] ; load s2[eax] into dh
+	cmp	dl, dh ; compare the two bytes
+	jg	.add ; if s1[eax] > s2[eax], add to the value
+	jl	.sub ; if s1[eax] > s2[eax], subtract from the value
+	cmp	dl, 0 ; check for terminating byte
+	jz	.end ; if so, end the function
+	cmp	dh, 0 ; check for terminating byte
+	jz	.end ; if so, end the function
+	inc	ebx ; increment the byte selected in rbx
+	inc	ecx ; increment the byte selected in rcx
+	jmp	.loop ; loop again
 	.add:
-	inc	eax
-	inc	ebx
-	inc	ecx
-	jmp	.loop
+	inc	eax ; increment return value
+	inc	ebx ; increment the byte selected in rbx
+	inc	ecx ; increment the byte selected in rcx
+	jmp	.loop ; loop again
 	.sub:
-	dec	eax
-	inc	ebx
-	inc	ecx
-	jmp	.loop
+	dec	eax ; subtract return value
+	inc	ebx ; increment the byte selected in rbx
+	inc	ecx ; increment the byte selected in rcx
+	jmp	.loop ; loop again
 	.end:
-	pop	ecx
-	pop	ebx
+	pop	ebx ; clean the stack
 	ret
 
 getc:	; char getc(FILE *stream); get one byte from stream
-	mov	eax, [esp+4]
-	push	ebx
-	mov	ebx, eax
-	push	eax
-	mov	edx, 1
-	mov	ecx, esp
-	mov	eax, 3
-	int	80h
-	pop	eax
-	pop	ebx
+	mov	eax, [esp+4] ; move stream in rax
+	push	ebx ; save nonvolatile register
+	mov	ebx, eax ; move stream into rbx for syscall
+	push	eax ; push rax to create a character pointer
+	mov	edx, 1 ; specify to read one byte when syscall executes
+	mov	ecx, esp ; select the character pointer to store the value in
+	mov	eax, 3 ; select read() syscall
+	int	80h ; execute syscall
+	pop	eax ; clean stack, set the return value
+	pop	ebx ; clean stack
 	ret
 	
 
 getchar: ; char getchar() ;; gets one byte from stdin
-	mov	eax, stdin
-	push	eax
-	call	getc
-	pop	ecx
+	mov	eax, stdin ; move stdin into rax
+	push	eax ; use stdin as a parameter for getc()
+	call	getc ; getc(stdin)
+	pop	ecx ; clean up the stack
 	ret
 
-sleep: ; void sleep(int) ;; sleeps for however many seconds the parameter specifies
-	mov	eax, [esp+4]
-	push	ebx
-	push	ecx
-	mov	ecx, 0
-	mov	ebx, eax
-	push	ecx
-	mov	ecx, esp
-	push	ebx
-	mov	ebx, esp
-	mov	eax, 162
-	int	80h
-	pop	ebx
-	pop	ecx
-	pop	ecx
-	pop	ebx
+sleep: ; void sleep(int seconds) ;; sleeps for however many seconds the parameter specifies
+	mov	eax, [esp+4] ; move rax to seconds
+	push	ebx ; save nonvolatile register
+	mov	ecx, 0 ; set nanoseconds to 0
+	mov	ebx, eax ; move seconds into rbx
+	push	ecx ; create pointer for nanoseconds
+	mov	ecx, esp ; load that pointer into rcx
+	push	ebx ; create pointer for seconds
+	mov	ebx, esp ; load that pointer into rbx
+	mov	eax, 162 ; select syscall -- sleep()
+	int	80h ; execute syscall
+	pop	ebx ; restore stack
+	pop	ecx ; restore stack
+	pop	ebx ; restore stack
 	ret
 
-exp: ; long exp(int, int) ;; raises first param to second param
-	mov	eax, [esp+4]
-	mov	edx, [esp+8]
-	push	ebx
-	mov	ebx, edx
-	cmp	ebx, 0
-	jz	.ret1
-	dec	ebx
+exp: ; long exp(int base, int power) ;; raises first param to second param
+	mov	eax, [esp+4] ; move base into rax 
+	mov	edx, [esp+8] ; move power into rdx
+	push	ebx ; save nonvolatile register
+	mov	ebx, edx ; move power into rbx
+	cmp	ebx, 0 ; if power is 0, return 1
+	jz	.ret1 
+	dec	ebx ; lower power by one to set counter
 	.loop:
-	cmp	ebx, 0
-	jz	.clean
-	imul	eax
-	dec	ebx
-	jmp	.loop
+	cmp	ebx, 0 ; while power(a decrementing counter) isn't 0 or less
+	jz	.clean ; if the power is at zero naturally, return the value
+	jl	.ret1 ; if the power is negative, return 1
+	imul	eax ; multiply rax by itself
+	dec	ebx ; lower the counter
+	jmp	.loop ; do the loop again
 	.ret1:
-	mov	eax, 1
-	pop	ebx
+	mov	eax, 1 ; set return value to 1
+	pop	ebx ; clean stack
 	ret
 	.clean:
-	pop	ebx
+	pop	ebx ; clean stack
 	ret
 
 
 memcpy: ; void memcpy(void *src, void *dest, int buffer) ;; copies from src to dest, using buffer to prevent overflow
-	mov	eax, [esp+4]
-	mov	edx, [esp+8]
-	mov	ecx, [esp+12]
-	push	esi
-	push	edi
-	mov	esi, eax
-	mov	edi, edx
-	cld
-	rep	movsb
-	pop	edi
-	pop	esi
+	mov	eax, [esp+4] ; move src into rax
+	mov	edx, [esp+8] ; move dest into rdx
+	mov	ecx, [esp+12] ; move buffer into rcx
+	push	esi ; save nonvolatile register
+	push	edi ; save nonvolatile register
+	mov	esi, eax ; move src into source index
+	mov	edi, edx ; move dest into destination index
+	cld ; clear direction flag so the bytes write in incrementing value
+	rep	movsb ; repeatedly copy bytes until ecx runs out
+	pop	edi ; clean the stack
+	pop	esi ; clean the stack
 	ret
 
 
 
 error: ; called in-case of library error
-	mov	eax, 1
-	xor	ebx, ebx
-	dec	ebx
-	int	80h
+	mov	eax, 1 ; set syscall for exit
+	xor	ebx, ebx ; set rbx to 0
+	dec	ebx ; set rbx to -1
+	int	80h ; execute syscall -- exit()
 
-inputb: ; void inputb(char *, int) ;; buffered stdin input
-	mov	eax, [esp+4]
-	mov	ecx, [esp+8]
-	mov	edx, stdin
-	push	edx
-	push	ecx
-	push	eax
-	call	finputb
-	pop	eax
-	pop	ecx
-	pop	edx
+inputb: ; void inputb(char *buffer , int length) ;; buffered stdin input
+	mov	eax, [esp+4] ; move buffer into rax
+	mov	ecx, [esp+8] ; move length into rcx
+	mov	edx, stdin ; move stdin into rdx
+	push	edx ; push stdin as an argument to finputb
+	push	ecx ; push length as an argument to finputb
+	push	eax ; push buffer as an argument to finputb
+	call	finputb ; finputb(buffer, length, stdin);
+	pop	eax ; clean stack
+	pop	ecx ; clean stack
+	pop	edx ; clean stack
 	ret
 
 
 
-finputb: ; void inputb(char *, int, FILE *) ;; buffered input from file
-	mov	eax, [esp+4]
-	mov	ecx, [esp+8]
-	mov	edx, [esp+12]
-	push	ebx
-	mov	ebx, eax
-	dec	ecx
-	xor	eax, eax
-	.loop:
-	cmp	ecx, 0
-	jz	.clean
-	dec	ecx
-	push	ecx
-	push	edx
-	call	getc
-	pop	edx
-	pop	ecx
-	cmp	eax, 0ah
-	je	.clean
-	mov	byte [ebx], al
-	inc	ebx
-	jmp	.loop
-	.clean:
-	mov	byte [ebx], 0
-	pop	ebx
-	push	edx
-	.cloop:
-	cmp	eax, 0ah
-	je	.end
-	cmp	eax, 0
-	jz	.end
-	call	getc
-	jmp	.cloop
+finputb: ; void inputb(char *buffer, int length, FILE *stream) ;; buffered input from file
+	mov	eax, [esp+4] ; move buffer into rax
+	mov	ecx, [esp+8] ; move length into rcx
+	mov	edx, [esp+12] ; move stream into rdx
+	push	ebx ; save nonvolatile register
+	mov	ebx, eax ; move buffer into rbx for read syscall
+	dec	ecx ; decrement length by one to account for term byte
+	xor	eax, eax ; set rax to 0
+	.loop: ; continue reading a byte until the length is 0, or we reach newline
+	cmp	ecx, 0 ; check for buffer end
+	jz	.clean ; if so, end the function
+	dec	ecx ; lower the available space by 1 byte
+	push	ecx ; save the value of ecx, so it isnt overwritten by getc
+	push	edx ; push stream as argument for getc
+	call	getc ; getc(stream);
+	pop	edx ; clean stack
+	pop	ecx ; clean stack
+	cmp	eax, 0ah ; check for '\n'
+	je	.clean ; if last character was a newline, end function
+	mov	byte [ebx], al ; if last character wasn't newline, write to buffer
+	inc	ebx ; increment the byte specified by buffer
+	jmp	.loop ; loop again
+	.clean: ; end the function
+	mov	byte [ebx], 0 ; append terminating byte
+	pop	ebx ; clean stack
+	.cloop: ; make sure to flush stdin
+	cmp	eax, 0ah ; check for newline
+	je	.end ; if newline, end for good
+	cmp	eax, 0 ; check for terminating byte(in the case of a file, EOF)
+	jz	.end ; if term. byte or EOF, end for good
+	call	getc ; otherwise, getc to clean 1 byte from stdin
+	jmp	.cloop ; loop until EOF or '\n'
 	.end:
-	pop	edx
 	ret
 
 
-atoi: ; signed long atoi(char *) ;; ascii to integer
-	mov	ecx, [esp+4]
-	xor	eax, eax
-	xor	edx, edx
-	.loop:
-	cmp	byte [ecx], '0'
-	jl	.nonint
-	cmp	byte [ecx], '9'
-	jg	.nonint
-	mov	dl, [ecx]
-	sub	edx, '0'
-	imul	eax, 10
-	add	eax, edx
-	inc	ecx
-	jmp	.loop
-	.nonint:
-	cmp	eax, 0
-	jz	.error
+atoi: ; signed long atoi(char *string) ;; ascii to integer
+	mov	ecx, [esp+4] ; move string to rcx
+	xor	eax, eax ; set eax to 0
+	xor	edx, edx ; set edx to 0 so that dh will be zero and won't overwrite our values
+	.loop: ; iterate over string, checking for numbers
+	cmp	byte [ecx], '0' ; check if the current byte is less than ASCII 0
+	jl	.nonint ; if so, jump to .nonint
+	cmp	byte [ecx], '9' ; check if the current byte is more than ASCII 9
+	jg	.nonint ; if so, jump to .nonint
+	mov	dl, [ecx] ; set dl to current byte
+	sub	edx, '0' ; subtract ASCII 0 from whatever ASCII number we got
+	imul	eax, 10 ; multiply rax(return value)
+	add	eax, edx ; add current byte to rax(return value)
+	inc	ecx ; increment our byte to iterate over the string
+	jmp	.loop ; do loop again
+	.nonint: ; if we didnt find an integer
+	cmp	eax, 0 ; if we found 0 integers whatever in the string
+	jz	error ; then there was an error. the input wasnt a number
 	ret
-	.error:
-	xor	eax, eax
-	dec	eax
-	ret
+	
 
 
-strzero: ; void strzero(char *) ;; nullify a string
-	mov	eax, [esp+4]
-	push	eax
-	call	strlen
-	mov	edx, eax
-	pop	eax
-	push	edx
-	push	eax
-	call	memzero
-	pop	eax
-	pop	edx
+strzero: ; void strzero(char *string) ;; nullify a string
+	mov	eax, [esp+4] ; move string to rax
+	push	eax ; save the starting address of string, also set as a parameter for strlen
+	call	strlen ; get length of our string
+	mov	edx, eax ; move the length of string into rdx
+	pop	eax ; move string back into rax
+	push	edx ; use the length as an argument for memzero
+	push	eax ; use the string as an argument for memzero
+	call	memzero ; nullify the bytes
+	pop	eax ; clean stack
+	pop	edx ; clean stack
 	ret
 
 
-memzero: ; void memzero(void *, int length) ;; overwrite (length) bytes with zero
-	mov	eax, [esp+4]
-	mov	ecx, [esp+8]
-	.loop:
-	cmp	ecx, 0
-	jz	.clean
-	mov	byte [eax], 0
-	inc	eax
-	dec	ecx
-	jmp	.loop
+memzero: ; void memzero(void *buffer, int length) ;; overwrite (length) bytes with zero
+	mov	eax, [esp+4] ; move buffer into rax
+	mov	ecx, [esp+8] ; move length into rcx
+	.loop: ; overwrite all ze bytes
+	cmp	ecx, 0 ; if our counter in ecx tells us to stop, we stop
+	jz	.clean ; and then we clean our function call like good little boys and girls
+	mov	byte [eax], 0 ; overwrite the byte with 0
+	inc	eax ; increment our memory address in rax
+	dec	ecx ; tell ourselves that we wrote a byte by lowering our counter
+	jmp	.loop ; do it again
 	.clean:
 	ret
 
 strcpy: ; void strcpy(void *src, void *dst, int length) ;; copies length bytes from src to dst.
-	mov	eax, [esp+4]
-	mov	ecx, [esp+8]
-	mov	edx, [esp+12]
-	push	edx
-	push	ecx
-	push	eax
-	call	memcpy
-	pop	eax
-	pop	ecx
-	pop	edx
+	mov	eax, [esp+4] ; move src into rax
+	mov	ecx, [esp+8] ; move dst into rcx
+	mov	edx, [esp+12] ; move length into rdx
+	push	edx ; use length as a parameter for memcpy
+	push	ecx ; use dst as a parameter for memcpy
+	push	eax ; use src as a parameter for memcpy
+	call	memcpy ; call memcpy -- strcpy is just a wrapper for memcpy
+	pop	eax ; clean stack
+	pop	ecx ; clean stack
+	pop	edx ; clean the stack -- like good little boys and girls
 	ret
