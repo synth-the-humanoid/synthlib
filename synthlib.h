@@ -1,7 +1,7 @@
 #ifndef synthlib
 #define synthlib
 
-//FILE struct def from glibc -- literally copy/pasted for compatibility
+//FILE struct def from glibc
 typedef struct 
 {
  short level ;
@@ -20,8 +20,8 @@ typedef struct
 
 
 
-//functions initialized in lib.asm
-//documentation provided in lib.asm as well, next to the function initialization
+//functions declared in lib.asm
+
 extern void print(char *);
 extern int strcmp(char *, char *);
 extern void putchar(char);
@@ -38,5 +38,8 @@ extern void finputb(char *, int, FILE *);
 extern signed long atoi(char *);
 extern void strzero(char *);
 extern void memzero(char *, int);
+extern void memcpy(void *, void *, int);
+extern int open(char *filename, int flags, int mode);
+extern int read(char *filename, char *buffer, int length);
 
 #endif

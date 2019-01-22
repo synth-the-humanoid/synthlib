@@ -2,6 +2,10 @@ section	.data
 stdin:	equ 0
 stdout:	equ 1
 stderr:	equ 2
+S_IRUSR: equ 256
+S_IWUSR: equ 128
+O_RDONLY: equ 0
+O_WRONLY: equ 1
 
 section	.text
 
@@ -24,6 +28,8 @@ global	itoa
 global	strzero
 global	memzero
 global	memcpy
+global	open
+global	read
 
 strlen:		; int strlen(char *string) ;; returns length of string(without term byte)
 	mov	eax, [esp+4] ; rax refers to string
@@ -318,4 +324,42 @@ strcpy: ; void strcpy(void *src, void *dst, int length) ;; copies length bytes f
 	pop	eax ; clean stack
 	pop	ecx ; clean stack
 	pop	edx ; clean the stack -- like good little boys and girls
+	ret
+
+open: ; int open(char *filename, int flags, int mode);
+	mov	eax, [esp+4] ; move filename to rax
+	mov	ecx, [esp+8] ; move flags to rcx
+	mov	edx, [esp+12] ; move mode into rdx
+	push	ebx ; save nonvolatile register
+	mov	ebx, eax ; move filename to rbx for syscall
+	mov 	eax, 5 ; specify sys_open syscall
+	int	80h
+	pop	ebx
+	ret
+
+read: ; int read(char *filename, char *buffer, int length) ; read length bytes from filename into buffer
+	mov	eax, [esp+4] ; move filename to rax
+	mov	ecx, [esp+8] ; move buffer to rcx
+	mov	edx, [esp+12] ; move length to rdx
+	push	ebx ; save nonvolatile register
+	push	edx ; save parameter for read
+	push	ecx ; save parameter for read
+	mov	edx, S_IRUSR ; set mode for open
+	mov	ecx, O_RDONLY ; set flag for open
+	mov	ebx, eax ; set filename for open
+	push	edx ; push parameter
+	push	ecx ; push parameter
+	push	ebx ; push parameter
+	call	open ; open file
+	pop	ebx ; clean stack
+	pop	ecx ; clean stack
+	pop	edx ; clean stack
+	pop	ecx ; set parameter for sys_read
+	pop	edx ; set parameter for sys_read
+	dec	edx ; decrement the length by one to account for term. byte
+	mov	byte [ecx+edx], 0
+	mov	ebx, eax ; set parameter for sys_read
+	mov	eax, 3 ; specify sys_read
+	int	80h	; sys_read
+	pop	ebx ; clean stack
 	ret
