@@ -41,5 +41,6 @@ extern void memzero(char *, int);
 extern void memcpy(void *, void *, int);
 extern int open(char *filename, int flags, int mode);
 extern int read(char *filename, char *buffer, int length);
+extern void write(char *filename, char *buffer);
 
 #endif

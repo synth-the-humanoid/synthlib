@@ -6,6 +6,8 @@ S_IRUSR: equ 256
 S_IWUSR: equ 128
 O_RDONLY: equ 0
 O_WRONLY: equ 1
+O_CREAT: equ 64
+O_TRUNC: equ 512
 
 section	.text
 
@@ -30,6 +32,7 @@ global	memzero
 global	memcpy
 global	open
 global	read
+global	write
 
 strlen:		; int strlen(char *string) ;; returns length of string(without term byte)
 	mov	eax, [esp+4] ; rax refers to string
@@ -362,4 +365,49 @@ read: ; int read(char *filename, char *buffer, int length) ; read length bytes f
 	mov	eax, 3 ; specify sys_read
 	int	80h	; sys_read
 	pop	ebx ; clean stack
+	ret
+
+write: ; void write(char *filename, char *buffer) ;; write buffer into filename
+	; store the args in eax and edx
+	mov	eax, [esp+4] ; filename
+	mov	edx, [esp+8] ; buffer
+	; save registers
+	push	ebx ; nonvolatile
+	push	eax ; filename
+	push	edx ; buffer
+	; calculate string length
+	push	eax ; save rax
+	push	edx ; use rdx as argument to strlen, save it for later
+	call	strlen
+	mov	ecx, eax ; move strlen to rcx
+	pop	edx ; restore rdx value
+	pop	eax ; restore rax
+	; get file descriptor for filename
+	push	edx ; save values
+	push	ecx ; save values
+	push	eax ; save values
+	mov	edx, S_IRUSR ; set mode
+	or	edx, S_IWUSR ; set mode
+	mov	ecx, O_WRONLY ; set flag
+	or	ecx, O_CREAT ; set flag
+	or	ecx, O_TRUNC ; set flag
+	push	edx ; save values
+	push	ecx
+	push	eax
+	call	open
+	pop	ecx
+	pop	ecx
+	pop	edx
+	pop	ecx
+	pop	ecx
+	pop	edx
+	;; call write
+	xchg	ecx, edx
+	xchg	ebx, eax
+	mov	eax, 4
+	int	80h
+	; cleanup
+	pop	edx
+	pop	eax
+	pop	ebx
 	ret
