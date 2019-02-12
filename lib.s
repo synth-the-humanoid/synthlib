@@ -20,7 +20,7 @@ global	inputb
 global	strcmp
 global	getchar
 global	sleep
-global	exp
+global	pow
 global	strcpy
 global	getc
 global	putc
@@ -33,8 +33,12 @@ global	memcpy
 global	open
 global	read
 global	write
+global	reverse
+global	strlower
+global	strupper
 
 strlen:		; int strlen(char *string) ;; returns length of string(without term byte)
+
 	mov	eax, [esp+4] ; rax refers to string
 	push	ebx ; save nonvolatile register
 	mov	ebx, eax ; rax and rbx refer to string
@@ -170,7 +174,7 @@ sleep: ; void sleep(int seconds) ;; sleeps for however many seconds the paramete
 	pop	ebx ; restore stack
 	ret
 
-exp: ; long exp(int base, int power) ;; raises first param to second param
+pow: ; long pow(int base, int power) ;; raises first param to second param
 	mov	eax, [esp+4] ; move base into rax 
 	mov	edx, [esp+8] ; move power into rdx
 	push	ebx ; save nonvolatile register
@@ -391,23 +395,61 @@ write: ; void write(char *filename, char *buffer) ;; write buffer into filename
 	mov	ecx, O_WRONLY ; set flag
 	or	ecx, O_CREAT ; set flag
 	or	ecx, O_TRUNC ; set flag
-	push	edx ; save values
-	push	ecx
-	push	eax
-	call	open
-	pop	ecx
-	pop	ecx
-	pop	edx
-	pop	ecx
-	pop	ecx
-	pop	edx
+	push	edx ; save values // pass argument to open 
+	push	ecx ; save values // pass argument to open
+	push	eax ; save values // pass argument to open
+	call	open ; open the file
+	pop	ecx ; clean stack
+	pop	ecx ; clean stack
+	pop	edx ; clean stack
+	pop	ecx ; clean stack
+	pop	ecx ; clean stack
+	pop	edx ; clean stack
 	;; call write
-	xchg	ecx, edx
-	xchg	ebx, eax
-	mov	eax, 4
-	int	80h
+	xchg	ecx, edx ; swap parameters
+	xchg	ebx, eax ; swap parameters
+	mov	eax, 4 ; specify write syscall
+	int	80h ; write
 	; cleanup
-	pop	edx
-	pop	eax
-	pop	ebx
+	pop	edx ; clean stack
+	pop	eax ; clean stack
+	pop	ebx ; clean stack
+	ret
+
+strlower: ; void strlower(char *string) ;; converts all uppercase ascii characters in string to lowercase characters
+	mov	eax, [esp+4] ; move string into rax
+	xor	ecx, ecx ; set rcx to 0
+	.loop: ; while not at terminating byte, continue
+	cmp	byte [eax], 0 ; if terminating byte
+	jz	.eloop ; end loop
+	cmp	byte [eax], 'A' ; compare with ascii A
+	jl	.notupper ; if less than, dont convert
+	cmp	byte [eax], 'Z' ; compare with ascii Z
+	jg	.notupper ; if greater than, dont convert
+	mov	cl, [eax] ; move byte at current position to cl
+	add	ecx, 32 ; convert to lowercase
+	mov	byte [eax], cl ; move cl to byte at current position
+	.notupper:
+	inc	eax ; increment current position of rax
+	jmp	.loop ; do loop
+	.eloop: ; after the loop, return
+	ret
+
+strupper: ; void strupper(char *string) ;; converts all lowercase ascii characters in string to uppercase characters
+	mov	eax, [esp+4] ; mov string to rax
+	xor	ecx, ecx ; set rcx to 0
+	.loop: ; while not at terminating byte, continue
+	cmp	byte [eax], 0 ; if terminating byte
+	jz	.eloop ; end loop
+	cmp	byte [eax], 'a' ; compare with ascii a
+	jl	.notlower ; if less than, dont convert
+	cmp	byte [eax], 'z' ; compare with ascii z
+	jg	.notlower ; if greater than, dont convert
+	mov	cl, [eax] ; move byte at current position into cl
+	sub	ecx, 32 ; convert to uppercase
+	mov	byte [eax], cl ; move cl into byte at current position
+	.notlower:
+	inc	eax ; increment current position of rax
+	jmp	.loop ; do loop
+	.eloop: ; after the loop, return
 	ret
